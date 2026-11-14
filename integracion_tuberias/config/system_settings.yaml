@@ -1,0 +1,28 @@
+system:
+  project_name: "pipe_inspection_crawler"
+  version: "3.0.0"
+
+i2c:
+  bus_id: 4
+  pca9685_address: 0x40
+  ina219_address: 0x44
+  max_retries: 3
+  retry_delay_s: 0.005
+
+gpio_encoder:
+  chip_num: 3
+  pin_out_a: 20       # GPIO3_C4 (Pin físico 7)
+  pin_out_b: 1        # GPIO3_A1 (Pin físico 11)
+  gear_ratio: 298.0
+  cpr_motor: 3.0
+
+actuators:
+  laser_pwm_channel: 2
+  laser_rotator_n20:
+    ch_in1: 0
+    ch_in2: 1
+
+uart_locomotion:
+  port: "/dev/ttyS3"  # UART3 (Pin físico 3 RX, Pin físico 5 TX)
+  baudrate: 115200
+  timeout_s: 0.05

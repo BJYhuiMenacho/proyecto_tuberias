@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspector de Tuberías - Panel de Control</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">ROBOT INSPECTOR DE TUBERÍAS <span>PVC 5" - 10" | RADXA ZERO 3E</span></div>
+        <div class="status-indicators">
+            <span id="ws-badge" class="badge badge-warn">CONECTANDO...</span>
+            <span id="last-cmd-badge" class="badge badge-neutral">LISTO</span>
+        </div>
+    </header>
+
+    <main class="split-layout">
+        <!-- MITAD IZQUIERDA: CÁMARA Y ESTADO DE CONEXIÓN DE BUSES (50%) -->
+        <section class="left-pane">
+            <div class="video-container">
+                <img id="video-stream" src="/video_feed" alt="Stream Cámara">
+                <div class="video-hud">
+                    <span id="hud-dir">MARCHA: STOP</span>
+                    <span id="hud-pitch">PITCH: 0.0° | ROLL: 0.0°</span>
+                </div>
+            </div>
+
+            <div class="card hw-card">
+                <h3>ESTADO DE CONEXIÓN DE PERIFÉRICOS (RADXA)</h3>
+                <div class="hw-grid">
+                    <div class="hw-item">
+                        <span class="hw-name">BUS I2C-4 (P27/28)</span>
+                        <span id="st-i2c" class="hw-pill">--</span>
+                    </div>
+                    <div class="hw-item">
+                        <span class="hw-name">PCA9685 (0x40)</span>
+                        <span id="st-pca" class="hw-pill">--</span>
+                    </div>
+                    <div class="hw-item">
+                        <span class="hw-name">INA219 (0x44)</span>
+                        <span id="st-ina" class="hw-pill">--</span>
+                    </div>
+                    <div class="hw-item">
+                        <span class="hw-name">UART3 (P3/5)</span>
+                        <span id="st-uart" class="hw-pill">--</span>
+                    </div>
+                    <div class="hw-item">
+                        <span class="hw-name">ENCODER HALL</span>
+                        <span id="st-enc" class="hw-pill">--</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MITAD DERECHA: PARÁMETROS Y CONTROLES (50%) -->
+        <section class="right-pane">
+            <!-- 1. Telemetría Eléctrica Radxa (INA219) -->
+            <div class="card">
+                <h3>PARÁMETROS DE RADXA Y POTENCIA (INA219 @ 0x44)</h3>
+                <div class="telemetry-grid">
+                    <div class="t-box">
+                        <span class="t-label">Voltaje Bus</span>
+                        <span class="t-val" id="val-v">0.00 V</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Corriente</span>
+                        <span class="t-val" id="val-i">0.0 mA</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Potencia Consumida</span>
+                        <span class="t-val accent-cyan" id="val-p">0.0 mW</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Energía Acumulada</span>
+                        <span class="t-val" id="val-e">0.0 J</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Temp. CPU Radxa</span>
+                        <span class="t-val" id="val-temp">0.0 °C</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Trama Arduino</span>
+                        <span class="t-val" id="val-ard-rx">SIN DATOS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Orientación del Robot y Pistón (Arduino Nano) -->
+            <div class="card">
+                <h3>ORIENTACIÓN DEL ROBOT (IMU ICM-20948) Y CELDA</h3>
+                <div class="telemetry-grid cols-4">
+                    <div class="t-box">
+                        <span class="t-label">Cabeceo (Pitch)</span>
+                        <span class="t-val accent-amber" id="val-pitch">0.00°</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Balanceo (Roll)</span>
+                        <span class="t-val accent-amber" id="val-roll">0.00°</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Presión Celda</span>
+                        <span class="t-val" id="val-press">0.00 V</span>
+                    </div>
+                    <div class="t-box">
+                        <span class="t-label">Estado Locomoción</span>
+                        <span class="t-val accent-green" id="val-dir">DETENIDO</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Control de Locomoción (Velocidad Continua en Nano) -->
+            <div class="card">
+                <h3>CONTROL DE LOCOMOCIÓN (VELOCIDAD CONTINUA EN NANO)</h3>
+                
+                <div class="row-between">
+                    <span class="sub-label">Modo de Operación:</span>
+                    <div class="btn-group">
+                        <button id="btn-mode-manual" class="btn btn-active" onclick="setMode(false)">MODO MANUAL (TECLADO)</button>
+                        <button id="btn-mode-auto" class="btn" onclick="setMode(true)">MODO AUTOMÁTICO</button>
+                    </div>
+                </div>
+
+                <div class="row-between">
+                    <span class="sub-label">Velocidad Continua Fija (Nano):</span>
+                    <span class="current-sp">PWM Base: <b id="val-speed" class="accent-cyan">150.0</b></span>
+                </div>
+
+                <div class="locomotion-grid">
+                    <button id="btn-fwd" class="btn btn-lg" onclick="commandMotion('forward')">▲ AVANCE (W)</button>
+                    <button id="btn-stop" class="btn btn-lg btn-danger btn-selected" onclick="commandMotion('stop')">■ STOP (ESPACIO)</button>
+                    <button id="btn-rev" class="btn btn-lg" onclick="commandMotion('reverse')">▼ RETROCESO (S)</button>
+                </div>
+                <p class="help-text" id="mode-help-text">
+                    Modo Manual: Mantén presionada la tecla <b>W</b> (Avanzar) o <b>S</b> (Retroceder); al soltar se detendrá. En Modo Automático la marcha se mantiene continua hasta presionar STOP.
+                </p>
+            </div>
+
+            <!-- 4. Regulación Manual del Pistón -->
+            <div class="card">
+                <h3>REGULACIÓN DEL PISTÓN (MANTENER PRESIONADO)</h3>
+                <div class="locomotion-grid" style="grid-template-columns: 1fr 1fr;">
+                    <button id="btn-piston-ext" class="btn btn-lg btn-cyan" style="user-select: none;">
+                        ⬆ ESTIRAR PISTÓN
+                    </button>
+                    <button id="btn-piston-ret" class="btn btn-lg btn-cyan" style="user-select: none;">
+                        ⬇ COMPRIMIR PISTÓN
+                    </button>
+                </div>
+                <p class="help-text">
+                    Mantén presionado para estirar o comprimir; al soltar se queda retenido en su posición actual.
+                </p>
+            </div>
+
+            <!-- 5. Control del Láser (Canal 2 PCA9685) -->
+            <div class="card">
+                <h3>CONTROL DEL LÁSER ANULAR 360° (PCA9685 - CANAL 2)</h3>
+                <div class="control-slider-row">
+                    <button id="btn-laser-toggle" class="btn btn-danger" onclick="toggleLaser()">LÁSER: APAGADO</button>
+                    <div class="slider-wrap">
+                        <label>Potencia PWM: <b id="lbl-laser-pwm">50%</b></label>
+                        <input type="range" id="rng-laser-pwm" min="0" max="100" value="50" oninput="changeLaserPwm(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Control del Motor del Láser (Canales 0 y 1 PCA9685) -->
+            <div class="card">
+                <h3>MOTOR DEL LÁSER (PCA9685 - CANALES 0 Y 1)</h3>
+                <div class="control-slider-row">
+                    <div class="slider-wrap">
+                        <label>Velocidad PWM Motor: <b id="lbl-motor-pwm">40%</b></label>
+                        <input type="range" id="rng-motor-pwm" min="0" max="100" value="40" oninput="changeMotorPwm(this.value)">
+                    </div>
+                    <div class="angle-box">
+                        <span>Ángulo: <b id="val-angle">0.0°</b></span>
+                        <button class="btn btn-sm" onclick="resetEncoderHome()">CERO (0°)</button>
+                    </div>
+                </div>
+
+                <div class="locomotion-grid">
+                    <button id="btn-m-cw" class="btn" onclick="commandLaserMotor('FORWARD')">↻ GIRO HORARIO</button>
+                    <button id="btn-m-stop" class="btn btn-danger btn-selected" onclick="commandLaserMotor('STOP')">■ PARAR MOTOR</button>
+                    <button id="btn-m-ccw" class="btn" onclick="commandLaserMotor('BACKWARD')">↺ INVERTIR GIRO</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
